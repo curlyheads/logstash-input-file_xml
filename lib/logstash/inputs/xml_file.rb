@@ -14,38 +14,35 @@ class LogStash::Inputs::FileXml < LogStash::Inputs::Base
   # If undefined, Logstash will complain, even if codec is unused.
   default :codec, "plain"
 
-  # The message string to use in the event.
-  config :message, :validate => :string, :default => "Hello World!"
-
-  # Set how frequently messages should be sent.
+  # The path(s) to the file(s) to use as an input.
+  # You can use filename patterns here, such as `/var/log/*.log`.
+  # Paths must be absolute and cannot be relative.
   #
-  # The default, `1`, means send a message every second.
-  config :interval, :validate => :number, :default => 1
+  # You may also configure multiple paths. See an example
+  # on the <<array,Logstash configuration page>>.
+  config :path, :validate => :array, :required => true
+
+  # Exclusions (matched against the filename, not full path). Filename
+  # patterns are valid here, too. For example, if you have
+  # [source,ruby]
+  #     path => "/var/log/*"
+  #
+  # You might want to exclude gzipped files:
+  # [source,ruby]
+  #     exclude => "*.gz"
+  config :exclude, :validate => :array
+  
+  # The element path from the root element
+  config :xml_element, :validate => :string, :required => false
+
+  # The element path from as xpath query
+  config :xpath, :validate => :string, :required => true
 
   public
   def register
-    @host = Socket.gethostname
   end # def register
 
   def run(queue)
-    # we can abort the loop if stop? becomes true
-    while !stop?
-      event = LogStash::Event.new("message" => @message, "host" => @host)
-      decorate(event)
-      queue << event
-      # because the sleep interval can be big, when shutdown happens
-      # we want to be able to abort the sleep
-      # Stud.stoppable_sleep will frequently evaluate the given block
-      # and abort the sleep(@interval) if the return value is true
-      Stud.stoppable_sleep(@interval) { stop? }
-    end # loop
   end # def run
 
-  def stop
-    # nothing to do in this case so it is not necessary to define stop
-    # examples of common "stop" tasks:
-    #  * close sockets (unblocking blocking reads/accepts)
-    #  * cleanup temporary files
-    #  * terminate spawned threads
-  end
-end # class LogStash::Inputs::Example
+end # class LogStash::Inputs::FileXml
